@@ -1,0 +1,54 @@
+{
+  "name": "@rongyan/mdflow-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Markdown to HTML CLI with WeChat-compatible rich text export.",
+  "license": "MIT",
+  "author": "rongyan",
+  "homepage": "https://github.com/rongyan6/mdflow-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rongyan6/mdflow-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rongyan6/mdflow-cli/issues"
+  },
+  "keywords": [
+    "markdown",
+    "html",
+    "cli",
+    "wechat",
+    "md",
+    "renderer"
+  ],
+  "bin": {
+    "mdflow-cli": "./bin/mdflow-cli.js"
+  },
+  "files": [
+    "assets",
+    "images",
+    "bin",
+    "src",
+    "examples",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start": "node ./bin/mdflow-cli.js",
+    "pack:check": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.12.0",
+    "front-matter": "^4.0.2",
+    "highlight.js": "^11.11.1",
+    "juice": "^11.0.3",
+    "linkedom": "^0.18.12",
+    "marked": "^17.0.5"
+  }
+}
