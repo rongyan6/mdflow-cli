@@ -3,4 +3,11 @@ node_modules
 .DS_Store
 assets/*.html
 assets/*.wxhtml
+assets/*.png
 tmp
+demo.html
+demo.wxhtml
+post.html
+examples/assets
+tmp-api-assets
+tmp-cli-assets

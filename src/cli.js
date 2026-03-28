@@ -1,23 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import {
-  DEFAULT_CONFIG,
-  FONT_FAMILY_OPTIONS,
-  FONT_SIZE_OPTIONS,
-  HEADING_STYLE_OPTIONS,
-  LEGEND_OPTIONS,
-  PRIMARY_COLOR_OPTIONS,
-  THEME_OPTIONS,
-  getCodeThemeUrl,
-  parseBooleanLike,
-  resolveChoice,
-  resolvePrimaryColor,
-} from './options.js'
-import { preprocessMarkdown } from './preprocess.js'
-import { renderMarkdownToHtml } from './renderer.js'
-import { buildThemeCss } from './theme.js'
-import { exportWxhtml } from './wxhtml.js'
+import { resolveRenderConfig, renderMarkdown } from './index.js'
 
 const OPTION_ALIASES = {
   t: 'theme',
@@ -31,6 +15,7 @@ const OPTION_ALIASES = {
   customColor: 'custom-primary-color',
   customPrimaryColor: 'custom-primary-color',
   codeTheme: 'code-theme',
+  assetDir: 'asset-dir',
   macCodeBlock: 'mac-code-block',
   codeLineNumbers: 'code-line-numbers',
   cite: 'cite-status',
@@ -43,18 +28,20 @@ const OPTION_ALIASES = {
 
 function printHelp() {
   console.log(`
-mdflow-cli <input.md> [options]
+mdflow <input.md> [options]
 
 用法:
-  npx @rongyan/mdflow-cli article.md
-  npx @rongyan/mdflow-cli article.md --theme=优雅 --output=article.html
-  npx @rongyan/mdflow-cli article.md --wxhtml
+  mdflow post.md
+  mdflow post.md --theme=优雅 --output=post.html
+  mdflow post.md --wxoutput
+  mdflow post.md --asset-dir ./assets
 
 输入输出:
   <input.md>                         Markdown 文件路径，必填
   -o, --output <file|dir>            输出 HTML 文件
                                      可传文件名或目录；默认输出到 Markdown 同目录同名 .html
-  --wxhtml                           直接输出公众号 content 形态到 stdout，不写文件
+  --wxoutput <file|dir>              输出公众号内容形态 .wxhtml 文件
+                                     可传文件名或目录；默认输出到 Markdown 同目录同名 .wxhtml
   -h, --help                         显示帮助
 
 样式:
@@ -87,6 +74,8 @@ mdflow-cli <input.md> [options]
   --code-theme <name|url>            highlight.js 代码主题，默认 github-dark
                                      可传主题名或完整 CSS URL
                                      别名: --codeTheme
+  --asset-dir <dir>                  指定 Mermaid PNG 输出目录
+                                     不传时默认输出到 Markdown 同级 assets 目录
   --legend <title 优先|alt 优先|只显示 title|只显示 alt|文件名|不显示>
                                      图注格式，默认 只显示 alt
 
@@ -152,7 +141,15 @@ function parseArgs(argv) {
 }
 
 function resolveOutputPath(inputPath, outputArg) {
-  const defaultFileName = `${path.basename(inputPath, path.extname(inputPath))}.html`
+  return resolveFileOutputPath(inputPath, outputArg, '.html')
+}
+
+function resolveWxoutputPath(inputPath, outputArg) {
+  return resolveFileOutputPath(inputPath, outputArg, '.wxhtml')
+}
+
+function resolveFileOutputPath(inputPath, outputArg, extension) {
+  const defaultFileName = `${path.basename(inputPath, path.extname(inputPath))}${extension}`
 
   if (outputArg === undefined || outputArg === true) {
     return path.join(path.dirname(inputPath), defaultFileName)
@@ -171,64 +168,40 @@ function resolveOutputPath(inputPath, outputArg) {
 function normalizeConfig(args) {
   const input = args._[0]
   if (!input) {
-    throw new Error('请提供 Markdown 文件路径，例如 mdflow-cli demo.md --output demo.html')
+    throw new Error('请提供 Markdown 文件路径，例如 mdflow post.md --output post.html')
   }
 
   const resolvedInput = path.resolve(input)
-  const theme = resolveChoice(args.theme, THEME_OPTIONS, '--theme') || DEFAULT_CONFIG.theme
-  const fontFamily = resolveChoice(args['font-family'], FONT_FAMILY_OPTIONS, '--font-family') || DEFAULT_CONFIG.fontFamily
-  const fontSize = resolveChoice(args['font-size'], FONT_SIZE_OPTIONS, '--font-size') || DEFAULT_CONFIG.fontSize
-  const primaryColor = resolvePrimaryColor(args['primary-color'], args['custom-primary-color']) || DEFAULT_CONFIG.primaryColor
-  const legend = resolveChoice(args.legend, LEGEND_OPTIONS, '--legend') || DEFAULT_CONFIG.legend
+  const output = resolveOutputPath(resolvedInput, args.output)
+  const wxoutput = args.wxoutput === undefined
+    ? undefined
+    : resolveWxoutputPath(resolvedInput, args.wxoutput)
 
   return {
     input: resolvedInput,
-    output: resolveOutputPath(resolvedInput, args.output),
-    wxhtml: Boolean(args.wxhtml),
-    theme,
-    fontFamily,
-    fontSize,
-    primaryColor,
-    codeThemeUrl: getCodeThemeUrl(args['code-theme'] || DEFAULT_CONFIG.codeBlockTheme),
-    legend,
-    macCodeBlock: args['mac-code-block'] === undefined ? DEFAULT_CONFIG.macCodeBlock : parseBooleanLike(args['mac-code-block'], '--mac-code-block'),
-    codeLineNumbers: args['code-line-numbers'] === undefined ? DEFAULT_CONFIG.codeLineNumbers : parseBooleanLike(args['code-line-numbers'], '--code-line-numbers'),
-    citeStatus: args['cite-status'] === undefined ? DEFAULT_CONFIG.citeStatus : parseBooleanLike(args['cite-status'], '--cite-status'),
-    useIndent: args['use-indent'] === undefined ? DEFAULT_CONFIG.useIndent : parseBooleanLike(args['use-indent'], '--use-indent'),
-    useJustify: args['use-justify'] === undefined ? DEFAULT_CONFIG.useJustify : parseBooleanLike(args['use-justify'], '--use-justify'),
-    headingStyles: {
-      h1: resolveChoice(args['heading-1'], HEADING_STYLE_OPTIONS, '--heading-1') || DEFAULT_CONFIG.headingStyles.h1,
-      h2: resolveChoice(args['heading-2'], HEADING_STYLE_OPTIONS, '--heading-2') || DEFAULT_CONFIG.headingStyles.h2,
-      h3: resolveChoice(args['heading-3'], HEADING_STYLE_OPTIONS, '--heading-3') || DEFAULT_CONFIG.headingStyles.h3,
-    },
+    output,
+    wxoutput,
+    ...resolveRenderConfig({
+      markdownPath: resolvedInput,
+      htmlOutputPath: output,
+      theme: args.theme,
+      fontFamily: args['font-family'],
+      fontSize: args['font-size'],
+      primaryColor: args['primary-color'],
+      customPrimaryColor: args['custom-primary-color'],
+      codeTheme: args['code-theme'],
+      assetDir: args['asset-dir'],
+      legend: args.legend,
+      macCodeBlock: args['mac-code-block'],
+      codeLineNumbers: args['code-line-numbers'],
+      citeStatus: args['cite-status'],
+      useIndent: args['use-indent'],
+      useJustify: args['use-justify'],
+      heading1: args['heading-1'],
+      heading2: args['heading-2'],
+      heading3: args['heading-3'],
+    }),
   }
-}
-
-function buildHtmlDocument(content, css, title, codeThemeUrl) {
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title}</title>
-  <link rel="stylesheet" href="${codeThemeUrl}" />
-  <style>${css}</style>
-</head>
-<body>
-  <div class="mdflow-page">
-    <div id="output">
-      ${content}
-    </div>
-  </div>
-</body>
-</html>`
-}
-
-function escapeTitle(title) {
-  return String(title)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
 }
 
 export async function runCli(argv) {
@@ -241,37 +214,27 @@ export async function runCli(argv) {
 
     const config = normalizeConfig(args)
     const raw = await readFile(config.input, 'utf8')
-    const preprocessedMarkdown = await preprocessMarkdown(raw, {
-      markdownPath: config.input,
-      htmlOutputPath: config.output,
+    const result = await renderMarkdown(raw, {
+      ...config,
       onWarning(message) {
-        console.warn(`mdflow-cli: ${message}`)
+        console.warn(`mdflow: ${message}`)
       },
     })
-    const result = renderMarkdownToHtml(preprocessedMarkdown, config)
-    const css = buildThemeCss(config)
-    const title = escapeTitle(result.frontMatter.title || result.title || path.basename(config.input, path.extname(config.input)))
-    const wxhtml = await exportWxhtml({
-      html: result.html,
-      themeCss: css,
-      codeThemeUrl: config.codeThemeUrl,
-      primaryColor: config.primaryColor,
-    })
 
-    if (config.wxhtml) {
-      process.stdout.write(wxhtml)
-      return
+    if (config.wxoutput) {
+      await mkdir(path.dirname(config.wxoutput), { recursive: true })
+      await writeFile(config.wxoutput, result.wxhtml, 'utf8')
+      console.log(`WXHTML 已输出到 ${config.wxoutput}`)
     }
 
-    const fullHtml = buildHtmlDocument(result.html, css, title, config.codeThemeUrl)
     await mkdir(path.dirname(config.output), { recursive: true })
-    await writeFile(config.output, fullHtml, 'utf8')
+    await writeFile(config.output, result.html, 'utf8')
     console.log(`HTML 已输出到 ${config.output}`)
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error(`mdflow-cli: ${message}`)
-    console.error(`运行 mdflow-cli --help 查看可用参数`)
+    console.error(`mdflow: ${message}`)
+    console.error(`运行 mdflow --help 查看可用参数`)
     process.exitCode = 1
   }
 }
