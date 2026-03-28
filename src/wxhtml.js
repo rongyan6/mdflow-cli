@@ -32,6 +32,18 @@ function stripOutputScope(cssContent) {
   return css
 }
 
+function resolveWeChatCss(cssContent, primaryColor, fontFamily, fontSize) {
+  return stripOutputScope(cssContent)
+    .replace(/hsl\(var\(--foreground\)\)/g, '#3f3f3f')
+    .replace(/var\(--blockquote-background\)/g, '#f7f7f7')
+    .replace(/var\(--md-primary-color\)/g, primaryColor)
+    .replace(/var\(--md-font-family\)/g, fontFamily)
+    .replace(/var\(--md-font-size\)/g, fontSize)
+    .replace(/--md-primary-color:.+?;/g, '')
+    .replace(/--md-font-family:.+?;/g, '')
+    .replace(/--md-font-size:.+?;/g, '')
+}
+
 function mergeCss(html) {
   return juice(html, {
     inlinePseudoElements: true,
@@ -73,23 +85,16 @@ function createEmptyNode(document) {
   return node
 }
 
-function applyWeChatCompatibility(document, primaryColor) {
+function applyWeChatCompatibility(document, primaryColor, fontFamily, fontSize) {
   const output = document.getElementById('output')
   if (!output) {
     throw new Error('未找到 #output 节点，无法生成 wxhtml')
   }
 
   modifyHtmlStructure(document)
-  output.innerHTML = mergeCss(output.innerHTML)
 
   output.innerHTML = output.innerHTML
     .replace(/([^-])top:(.*?)em/g, '$1transform: translateY($2em)')
-    .replace(/hsl\(var\(--foreground\)\)/g, '#3f3f3f')
-    .replace(/var\(--blockquote-background\)/g, '#f7f7f7')
-    .replace(/var\(--md-primary-color\)/g, primaryColor)
-    .replace(/--md-primary-color:.+?;/g, '')
-    .replace(/--md-font-family:.+?;/g, '')
-    .replace(/--md-font-size:.+?;/g, '')
     .replace(
       /<span class="nodeLabel"([^>]*)><p[^>]*>(.*?)<\/p><\/span>/g,
       '<span class="nodeLabel"$1>$2</span>',
@@ -166,9 +171,14 @@ export async function exportWxhtml({
   themeCss,
   codeThemeUrl,
   primaryColor,
+  fontFamily,
+  fontSize,
 }) {
   const codeThemeCss = await getCodeThemeCss(codeThemeUrl)
-  const inlineCss = [stripOutputScope(themeCss), codeThemeCss].filter(Boolean).join('\n\n')
+  const inlineCss = [
+    resolveWeChatCss(themeCss, primaryColor, fontFamily, fontSize),
+    codeThemeCss,
+  ].filter(Boolean).join('\n\n')
 
   const wrapperHtml = `<!DOCTYPE html>
 <html>
@@ -181,6 +191,6 @@ export async function exportWxhtml({
 </body>
 </html>`
 
-  const { document } = parseHTML(wrapperHtml)
-  return compactHtmlFragment(applyWeChatCompatibility(document, primaryColor))
+  const { document } = parseHTML(mergeCss(wrapperHtml))
+  return compactHtmlFragment(applyWeChatCompatibility(document, primaryColor, fontFamily, fontSize))
 }

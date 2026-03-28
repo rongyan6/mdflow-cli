@@ -106,6 +106,8 @@ export async function renderMarkdown(markdown, input = {}) {
       themeCss: css,
       codeThemeUrl: config.codeThemeUrl,
       primaryColor: config.primaryColor,
+      fontFamily: config.fontFamily,
+      fontSize: config.fontSize,
     }),
     contentHtml: result.html,
     css,
