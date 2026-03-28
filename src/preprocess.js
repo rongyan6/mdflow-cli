@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import os from 'node:os'
@@ -48,13 +49,31 @@ function toAssetHref(assetFilePath, htmlOutputPath) {
 }
 
 function resolveMmdcPath() {
-  return path.resolve(
-    moduleDir,
-    '..',
-    'node_modules',
-    '.bin',
-    process.platform === 'win32' ? 'mmdc.cmd' : 'mmdc',
-  )
+  const binName = process.platform === 'win32' ? 'mmdc.cmd' : 'mmdc'
+  const roots = [moduleDir, process.cwd()]
+  const visited = new Set()
+
+  for (const root of roots) {
+    let current = root
+
+    while (!visited.has(current)) {
+      visited.add(current)
+
+      const candidate = path.join(current, 'node_modules', '.bin', binName)
+      if (existsSync(candidate)) {
+        return candidate
+      }
+
+      const parent = path.dirname(current)
+      if (parent === current) {
+        break
+      }
+      current = parent
+    }
+  }
+
+  // Fall back to PATH so hoisted or globally available mmdc still works.
+  return binName
 }
 
 async function renderMermaidBlockToPng(code, index, context) {
