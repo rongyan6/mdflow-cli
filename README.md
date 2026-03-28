@@ -21,13 +21,13 @@ npm i -g @rongyan/mdflow-cli
 也可以直接用 `npx`：
 
 ```bash
-npx @rongyan/mdflow-cli demo.md
+npx @rongyan/mdflow-cli post.md
 ```
 
 ## 基本用法
 
 ```bash
-npx @rongyan/mdflow-cli article.md
+npx @rongyan/mdflow-cli post.md
 ```
 
 不传 `--output` 时，会默认生成到 Markdown 同目录、同名的 `.html` 文件。
@@ -35,19 +35,19 @@ npx @rongyan/mdflow-cli article.md
 例如：
 
 ```bash
-npx @rongyan/mdflow-cli docs/post.md
+npx @rongyan/mdflow-cli post.md
 ```
 
 会生成：
 
 ```bash
-docs/post.html
+post.html
 ```
 
 如果 `--output` 只传目录，则会自动使用 Markdown 文件名：
 
 ```bash
-npx @rongyan/mdflow-cli docs/post.md --output dist/
+npx @rongyan/mdflow-cli post.md --output dist/
 ```
 
 会生成：
@@ -56,22 +56,10 @@ npx @rongyan/mdflow-cli docs/post.md --output dist/
 dist/post.html
 ```
 
-## Mermaid 输出
-
-如果 Markdown 中包含 ` ```mermaid ` 代码块，CLI 会自动调用官方 `@mermaid-js/mermaid-cli` 转成 PNG。
-
-生成规则：
-
-- HTML 文件：写到 `--output` 指定位置，或 Markdown 同级同名 `.html`
-- Mermaid 图片：写到 Markdown 同级的 `assets/` 目录
-- HTML 中使用相对路径引用这些 PNG 文件
-
-例如：
+如果要直接输出微信公众号富文本内容：
 
 ```bash
-docs/post.md
-docs/assets/mermaid-1-xxxxxx.png
-docs/post.html
+npx @rongyan/mdflow-cli post.md --wxhtml
 ```
 
 ## 效果示例
@@ -179,6 +167,24 @@ docs/post.html
     <td></td>
   </tr>
 </table>
+
+## Mermaid 输出
+
+如果 Markdown 中包含 ` ```mermaid ` 代码块，CLI 会自动调用官方 `@mermaid-js/mermaid-cli` 转成 PNG。
+
+生成规则：
+
+- HTML 文件：写到 `--output` 指定位置，或 Markdown 同级同名 `.html`
+- Mermaid 图片：写到 Markdown 同级的 `assets/` 目录
+- HTML 中使用相对路径引用这些 PNG 文件
+
+例如：
+
+```bash
+post.md
+assets/mermaid-1-xxxxxx.png
+post.html
+```
 
 ## 参数
 
