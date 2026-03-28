@@ -22,7 +22,7 @@
     "renderer"
   ],
   "bin": {
-    "mdflow-cli": "./bin/mdflow-cli.js"
+    "mdflow-cli": "bin/mdflow-cli.js"
   },
   "files": [
     "assets",
