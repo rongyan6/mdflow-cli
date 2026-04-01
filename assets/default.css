@@ -345,13 +345,14 @@ code {
 /* 代码块内的 code 标签需要特殊处理（覆盖行内 code 样式） */
 pre.code__pre > code,
 .hljs.code__pre > code {
-  display: -webkit-box;
+  display: block;
   padding: 0.5em 1em 1em;
   overflow-x: auto;
   text-indent: 0;
   color: inherit;
   background: none;
-  white-space: nowrap;
+  white-space: pre-wrap;
+  word-break: break-word;
   margin: 0;
 }
 

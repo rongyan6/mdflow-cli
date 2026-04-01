@@ -35,10 +35,8 @@ export function createHtmlDocument(content, css, title, codeThemeUrl) {
   <style>${css}</style>
 </head>
 <body>
-  <div class="mdflow-page">
-    <div id="output">
-      ${content}
-    </div>
+  <div style="width: 100%; max-width: 100%; margin: 0 auto; padding: 20px; background: white; position: relative; min-height: 100%; font-size: 14px; box-sizing: border-box; outline: none; transition: all 300ms ease-in-out; word-wrap: break-word;">
+    <div id="output">${content}</div>
   </div>
 </body>
 </html>`
@@ -92,7 +90,7 @@ export async function renderMarkdown(markdown, input = {}) {
     onInfo: input.onInfo,
   })
   const result = renderMarkdownToHtml(preparedMarkdown, config)
-  const css = buildThemeCss(config)
+  const css = await buildThemeCss(config)
   const titleSource = result.frontMatter.title
     || result.title
     || input.title

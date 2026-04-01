@@ -32,8 +32,26 @@ function stripOutputScope(cssContent) {
   return css
 }
 
+function formatCssNumber(value) {
+  const rounded = Math.round(value * 1000) / 1000
+  return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/\.?0+$/, '')
+}
+
+function normalizeWeChatCalcExpressions(cssContent) {
+  return cssContent
+    .replace(
+      /calc\(\s*(-?\d*\.?\d+)(px|em|rem)\s*\*\s*(-?\d*\.?\d+)\s*\)/g,
+      (_, rawValue, unit, rawMultiplier) => `${formatCssNumber(Number(rawValue) * Number(rawMultiplier))}${unit}`,
+    )
+    .replace(
+      /calc\(\s*(-?\d*\.?\d+)\s*\*\s*(-?\d*\.?\d+)(px|em|rem)\s*\)/g,
+      (_, rawMultiplier, rawValue, unit) => `${formatCssNumber(Number(rawValue) * Number(rawMultiplier))}${unit}`,
+    )
+}
+
 function resolveWeChatCss(cssContent, primaryColor, fontFamily, fontSize) {
-  return stripOutputScope(cssContent)
+  return normalizeWeChatCalcExpressions(
+    stripOutputScope(cssContent)
     .replace(/hsl\(var\(--foreground\)\)/g, '#3f3f3f')
     .replace(/var\(--blockquote-background\)/g, '#f7f7f7')
     .replace(/var\(--md-primary-color\)/g, primaryColor)
@@ -41,7 +59,8 @@ function resolveWeChatCss(cssContent, primaryColor, fontFamily, fontSize) {
     .replace(/var\(--md-font-size\)/g, fontSize)
     .replace(/--md-primary-color:.+?;/g, '')
     .replace(/--md-font-family:.+?;/g, '')
-    .replace(/--md-font-size:.+?;/g, '')
+    .replace(/--md-font-size:.+?;/g, ''),
+  )
 }
 
 function mergeCss(html) {

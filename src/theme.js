@@ -1,4 +1,5 @@
 import { baseCss, themeCssMap } from './css.js'
+import { processCss } from './css-processor.js'
 
 function generateHeadingCss(level, style) {
   const selector = `#output ${level}`
@@ -51,16 +52,6 @@ function generateVariableCss(config) {
 
 body {
   margin: 0;
-  background: #f5f5f5;
-  color: #222;
-}
-
-.mdflow-page {
-  width: min(750px, calc(100vw - 32px));
-  margin: 24px auto;
-  padding: 20px;
-  background: #fff;
-  box-sizing: border-box;
 }
 
 #output p {
@@ -120,9 +111,12 @@ table.preview-table {
   `.trim()
 }
 
-export function buildThemeCss(config) {
-  const themeCss = themeCssMap[config.theme] || themeCssMap.default
+export async function buildThemeCss(config) {
+  let themeCss = themeCssMap.default
+  if (config.theme !== 'default' && themeCssMap[config.theme]) {
+    themeCss = `${themeCss}\n\n${themeCssMap[config.theme]}`
+  }
   const variableCss = generateVariableCss(config)
   const headingCss = generateHeadingStylesCss(config.headingStyles)
-  return [variableCss, baseCss, themeCss, headingCss].filter(Boolean).join('\n\n')
+  return processCss([variableCss, baseCss, themeCss, headingCss].filter(Boolean).join('\n\n'))
 }
