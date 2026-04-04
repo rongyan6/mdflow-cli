@@ -64,12 +64,18 @@ body {
   overflow: auto;
   padding: 0;
   border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .hljs.code__pre > code {
   display: block;
   padding: 16px;
   overflow-x: auto;
+  white-space: inherit;
+  word-break: inherit;
+  overflow-wrap: inherit;
 }
 
 .hljs.code__pre > .mac-sign {

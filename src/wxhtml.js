@@ -95,6 +95,20 @@ function solveWeChatImage(document) {
   })
 }
 
+function applyCodeBlockWrap(document) {
+  document.querySelectorAll('pre.code__pre, pre.hljs.code__pre').forEach((pre) => {
+    pre.style.whiteSpace = 'pre-wrap'
+    pre.style.wordBreak = 'break-word'
+    pre.style.overflowWrap = 'anywhere'
+  })
+
+  document.querySelectorAll('pre.code__pre > code, pre.hljs.code__pre > code').forEach((code) => {
+    code.style.whiteSpace = 'inherit'
+    code.style.wordBreak = 'inherit'
+    code.style.overflowWrap = 'inherit'
+  })
+}
+
 function createEmptyNode(document) {
   const node = document.createElement('p')
   node.style.fontSize = '0'
@@ -124,6 +138,7 @@ function applyWeChatCompatibility(document, primaryColor, fontFamily, fontSize) 
     )
 
   solveWeChatImage(document)
+  applyCodeBlockWrap(document)
 
   output.insertBefore(createEmptyNode(document), output.firstChild)
   output.appendChild(createEmptyNode(document))
