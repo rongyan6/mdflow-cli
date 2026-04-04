@@ -12,6 +12,9 @@ const UNDERSCORE_REGEX = /_/g
 const HEADING_TAG_REGEX = /^h\d$/
 const PARAGRAPH_WRAPPER_REGEX = /^<p(?:\s[^>]*)?>([\s\S]*?)<\/p>$/
 const MP_WEIXIN_LINK_REGEX = /^https?:\/\/mp\.weixin\.qq\.com/
+const ADJACENT_SPAN_WITH_SPACE_REGEX = /(<span[^>]*>[^<]*<\/span>)(\s+)(<span[^>]*>[^<]*<\/span>)/g
+const LEADING_SPACE_BEFORE_SPAN_REGEX = /(\s+)(<span[^>]*>)/g
+const TEXT_NODE_OR_LEADING_TEXT_REGEX = /(>[^<]+)|(^[^<]+)/g
 
 const macCodeSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" x="0px" y="0px" width="45px" height="13px" viewBox="0 0 450 130">
@@ -29,6 +32,31 @@ function escapeHtml(text) {
     .replace(DOUBLE_QUOTE_REGEX, '&quot;')
     .replace(SINGLE_QUOTE_REGEX, '&#39;')
     .replace(BACKTICK_REGEX, '&#96;')
+}
+
+function formatHighlightedCode(html, preserveNewlines = false) {
+  let formatted = html
+    .replace(
+      ADJACENT_SPAN_WITH_SPACE_REGEX,
+      (_, span1, spaces, span2) => span1 + span2.replace(/^(<span[^>]*>)/, `$1${spaces}`),
+    )
+    .replace(
+      LEADING_SPACE_BEFORE_SPAN_REGEX,
+      (_, spaces, span) => span.replace(/^(<span[^>]*>)/, `$1${spaces}`),
+    )
+    .replace(/\t/g, '    ')
+
+  if (preserveNewlines) {
+    formatted = formatted
+      .replace(/\r\n/g, '<br/>')
+      .replace(/\n/g, '<br/>')
+      .replace(TEXT_NODE_OR_LEADING_TEXT_REGEX, str => str.replace(/\s/g, '&nbsp;'))
+  }
+  else {
+    formatted = formatted.replace(TEXT_NODE_OR_LEADING_TEXT_REGEX, str => str.replace(/\s/g, '&nbsp;'))
+  }
+
+  return formatted
 }
 
 function styledContent(styleLabel, content, tagName) {
@@ -151,13 +179,13 @@ function highlightAndFormatCode(text, language, showLineNumbers) {
   }
 
   if (!showLineNumbers) {
-    return highlighted
+    return formatHighlightedCode(highlighted, true)
   }
 
   return highlighted
     .split('\n')
     .map((line, index) => {
-      const safeLine = line === '' ? '&nbsp;' : line
+      const safeLine = formatHighlightedCode(line, false) || '&nbsp;'
       return `<span class="code-line"><span class="line-number">${index + 1}</span><span class="line-content">${safeLine}</span></span>`
     })
     .join('\n')
