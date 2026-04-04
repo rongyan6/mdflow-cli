@@ -1,6 +1,6 @@
 {
   "name": "@rongyan/mdflow-cli",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "Markdown to HTML CLI with WeChat-compatible rich text export.",
   "license": "MIT",

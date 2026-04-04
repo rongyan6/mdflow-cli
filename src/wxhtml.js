@@ -180,9 +180,7 @@ function applyWeChatCompatibility(document, primaryColor, fontFamily, fontSize) 
 }
 
 function compactHtmlFragment(fragment) {
-  return fragment
-    .replace(/>\s+</g, '><')
-    .trim()
+  return fragment.trim()
 }
 
 export async function exportWxhtml({
@@ -211,5 +209,6 @@ export async function exportWxhtml({
 </html>`
 
   const { document } = parseHTML(mergeCss(wrapperHtml))
+
   return compactHtmlFragment(applyWeChatCompatibility(document, primaryColor, fontFamily, fontSize))
 }
