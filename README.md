@@ -239,7 +239,7 @@ console.log(result.wxhtml)
 
 ## Mermaid 输出
 
-如果 Markdown 中包含 ` ```mermaid ` 代码块，CLI 会自动调用官方 `@mermaid-js/mermaid-cli` 转成 PNG。
+如果 Markdown 中包含 ` ```mermaid ` 代码块，CLI 会自动调用 `@rongyan/mermaid-plus-cli` 转成 PNG，渲染效果更精美，支持 15 种内置主题。
 
 生成规则：
 

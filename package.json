@@ -1,6 +1,6 @@
 {
   "name": "@rongyan/mdflow-cli",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "type": "module",
   "description": "Markdown to HTML CLI with WeChat-compatible rich text export.",
   "license": "MIT",
@@ -47,7 +47,7 @@
     "node": ">=22.14.0"
   },
   "dependencies": {
-    "@mermaid-js/mermaid-cli": "^11.12.0",
+    "@rongyan/mermaid-plus-cli": "^0.1.0",
     "front-matter": "^4.0.2",
     "highlight.js": "^11.11.1",
     "juice": "^11.0.3",

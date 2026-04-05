@@ -16,6 +16,9 @@ const OPTION_ALIASES = {
   customPrimaryColor: 'custom-primary-color',
   codeTheme: 'code-theme',
   assetDir: 'asset-dir',
+  mermaidTheme: 'mermaid-theme',
+  mermaidScale: 'mermaid-scale',
+  chromePath: 'chrome-path',
   macCodeBlock: 'mac-code-block',
   codeLineNumbers: 'code-line-numbers',
   cite: 'cite-status',
@@ -76,6 +79,10 @@ mdflow <input.md> [options]
                                      别名: --codeTheme
   --asset-dir <dir>                  指定 Mermaid PNG 输出目录
                                      不传时默认输出到 Markdown 同级 assets 目录
+  --mermaid-theme <name>             Mermaid 主题，默认 github-light
+                                     可选: github-light|github-dark|nord|tokyo-night 等 15 种
+  --mermaid-scale <n>                Mermaid 截图像素比，默认 2（Retina 质量），可传 1/2/3
+  --chrome-path <path>               Chrome 可执行文件路径（默认自动检测）
   --legend <title 优先|alt 优先|只显示 title|只显示 alt|文件名|不显示>
                                      图注格式，默认 只显示 alt
 
@@ -190,7 +197,10 @@ function normalizeConfig(args) {
       primaryColor: args['primary-color'],
       customPrimaryColor: args['custom-primary-color'],
       codeTheme: args['code-theme'],
-      assetDir: args['asset-dir'],
+      assetDir:     args['asset-dir'],
+      mermaidTheme: args['mermaid-theme'],
+      mermaidScale: args['mermaid-scale'],
+      chromePath:   args['chrome-path'],
       legend: args.legend,
       macCodeBlock: args['mac-code-block'],
       codeLineNumbers: args['code-line-numbers'],

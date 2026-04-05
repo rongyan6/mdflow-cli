@@ -1,15 +1,10 @@
-import { execFile } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { promisify } from 'node:util'
+import { convertMermaid } from '@rongyan/mermaid-plus-cli'
 
-const execFileAsync = promisify(execFile)
 const MERMAID_BLOCK_REGEX = /```mermaid\r?\n([\s\S]*?)\r?\n```/g
-const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 
 function escapeMarkdownAlt(text) {
   return String(text).replaceAll('[', '\\[').replaceAll(']', '\\]')
@@ -48,83 +43,22 @@ function toAssetHref(assetFilePath, htmlOutputPath) {
   return encodeURI(toPosixPath(assetFilePath))
 }
 
-function resolveMmdcPath() {
-  const binName = process.platform === 'win32' ? 'mmdc.cmd' : 'mmdc'
-  const roots = [moduleDir, process.cwd()]
-  const visited = new Set()
-
-  for (const root of roots) {
-    let current = root
-
-    while (!visited.has(current)) {
-      visited.add(current)
-
-      const candidate = path.join(current, 'node_modules', '.bin', binName)
-      if (existsSync(candidate)) {
-        return candidate
-      }
-
-      const parent = path.dirname(current)
-      if (parent === current) {
-        break
-      }
-      current = parent
-    }
-  }
-
-  // Fall back to PATH so hoisted or globally available mmdc still works.
-  return binName
-}
-
 async function renderMermaidBlockToPng(code, index, context) {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'mdflow-mermaid-'))
-  const inputFile = path.join(tempDir, `diagram-${index}.mmd`)
-  const outputFile = path.join(tempDir, `diagram-${index}.png`)
-  const configFile = path.join(tempDir, `diagram-${index}.json`)
+  const assetDir = resolveAssetDir(context)
+  await mkdir(assetDir, { recursive: true })
 
-  try {
-    await writeFile(inputFile, code, 'utf8')
-    await writeFile(
-      configFile,
-      JSON.stringify({
-        backgroundColor: 'transparent',
-      }),
-      'utf8',
-    )
+  const assetFileName = createAssetFileName(code, index)
+  const assetFilePath = path.join(assetDir, assetFileName)
 
-    const mmdcPath = resolveMmdcPath()
-    await execFileAsync(
-      mmdcPath,
-      [
-        '-i',
-        inputFile,
-        '-o',
-        outputFile,
-        '-e',
-        'png',
-        '-b',
-        'transparent',
-        '-p',
-        configFile,
-      ],
-      {
-        maxBuffer: 20 * 1024 * 1024,
-      },
-    )
+  await convertMermaid(code, assetFilePath, {
+    theme: context.mermaidTheme ?? 'github-light',
+    width:  context.mermaidWidth,
+    scale:  context.mermaidScale,
+    chrome: context.chromePath,
+  })
 
-    const assetDir = resolveAssetDir(context)
-    await mkdir(assetDir, { recursive: true })
-
-    const assetFileName = createAssetFileName(code, index)
-    const assetFilePath = path.join(assetDir, assetFileName)
-    await copyFile(outputFile, assetFilePath)
-
-    const href = toAssetHref(assetFilePath, context.htmlOutputPath)
-    return `![${escapeMarkdownAlt(`mermaid diagram ${index + 1}`)}](${href})`
-  }
-  finally {
-    await rm(tempDir, { recursive: true, force: true })
-  }
+  const href = toAssetHref(assetFilePath, context.htmlOutputPath)
+  return `![${escapeMarkdownAlt(`mermaid diagram ${index + 1}`)}](${href})`
 }
 
 export async function preprocessMarkdown(markdown, options = {}) {
@@ -144,9 +78,13 @@ export async function preprocessMarkdown(markdown, options = {}) {
 
     try {
       const imageMarkdown = await renderMermaidBlockToPng(code, index, {
-        markdownPath: options.markdownPath,
+        markdownPath:   options.markdownPath,
         htmlOutputPath: options.htmlOutputPath,
-        assetDir: options.assetDir,
+        assetDir:       options.assetDir,
+        mermaidTheme:   options.mermaidTheme,
+        mermaidWidth:   options.mermaidWidth,
+        mermaidScale:   options.mermaidScale,
+        chromePath:     options.chromePath,
       })
       result = result.replace(rawBlock, imageMarkdown)
     }

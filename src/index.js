@@ -47,6 +47,9 @@ export function resolveRenderConfig(input = {}) {
     assetDir: input.assetDir ? path.resolve(input.assetDir) : undefined,
     markdownPath: input.markdownPath ? path.resolve(input.markdownPath) : undefined,
     htmlOutputPath: input.htmlOutputPath ? path.resolve(input.htmlOutputPath) : undefined,
+    mermaidTheme: input.mermaidTheme || input['mermaid-theme'] || undefined,
+    mermaidScale: input.mermaidScale || input['mermaid-scale'] ? Number(input.mermaidScale || input['mermaid-scale']) : undefined,
+    chromePath: input.chromePath || input['chrome-path'] || undefined,
     theme: resolveChoice(input.theme, THEME_OPTIONS, 'theme') || DEFAULT_CONFIG.theme,
     fontFamily: resolveChoice(input.fontFamily || input['font-family'], FONT_FAMILY_OPTIONS, 'fontFamily') || DEFAULT_CONFIG.fontFamily,
     fontSize: resolveChoice(input.fontSize || input['font-size'], FONT_SIZE_OPTIONS, 'fontSize') || DEFAULT_CONFIG.fontSize,
@@ -83,11 +86,14 @@ function normalizeBooleanConfig(config) {
 export async function renderMarkdown(markdown, input = {}) {
   const config = normalizeBooleanConfig(resolveRenderConfig(input))
   const preparedMarkdown = await preprocessMarkdown(markdown, {
-    markdownPath: config.markdownPath,
+    markdownPath:   config.markdownPath,
     htmlOutputPath: config.htmlOutputPath,
-    assetDir: config.assetDir,
+    assetDir:       config.assetDir,
+    mermaidTheme:   config.mermaidTheme,
+    mermaidScale:   config.mermaidScale,
+    chromePath:     config.chromePath,
     onWarning: input.onWarning,
-    onInfo: input.onInfo,
+    onInfo:    input.onInfo,
   })
   const result = renderMarkdownToHtml(preparedMarkdown, config)
   const css = await buildThemeCss(config)
